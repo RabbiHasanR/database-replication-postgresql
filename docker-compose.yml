@@ -35,7 +35,6 @@ services:
     volumes:
       - ./replica-one/replica-data:/var/lib/postgresql/data
       - ./replica-one/postgresql.conf:/etc/postgresql/postgresql.conf
-      # - ./replica-one/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./replica-one/init-replica.sh:/init-replica.sh
     command: ["/bin/bash", "/init-replica.sh"]
     networks:
@@ -58,15 +57,10 @@ services:
     volumes:
       - ./replica-two/replica-data:/var/lib/postgresql/data
       - ./replica-two/postgresql.conf:/etc/postgresql/postgresql.conf
-      # - ./replica-two/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./replica-two/init-replica.sh:/init-replica.sh
     command: ["/bin/bash", "/init-replica.sh"]
     networks:
       - postgres-net
-
-# volumes:
-#   master_data:
-#   replica_data:
 
 networks:
   postgres-net:
