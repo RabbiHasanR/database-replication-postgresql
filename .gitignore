@@ -2,8 +2,8 @@
 .env
 
 # Ignore PostgreSQL data directories if you mount volumes later
-primary/data/
-replica/data/
+primary/master-data/
+replica/replica-data/
 
 # Ignore Docker-related artifacts
 *.log
