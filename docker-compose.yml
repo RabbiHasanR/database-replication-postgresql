@@ -3,11 +3,11 @@ services:
     image: postgres:15
     container_name: postgres-master
     ports:
-      - "5433:5432"
+      - "${POSTGRES_MASTER_PORT}:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: testdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./primary/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh
       - ./primary/postgresql.conf:/etc/postgresql/postgresql.conf
@@ -18,32 +18,55 @@ services:
       - postgres-net
 
   
-  postgres-replica:
+  postgres-replica-one:
     image: postgres:15
-    container_name: postgres-replica
+    container_name: postgres-replica-one
     depends_on:
       - postgres-master
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: testdb
-      REPLICATOR_USER: replicator
-      REPLICATOR_PASSWORD: '123456'
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REPLICATOR_USER: ${REPLICATOR_USER}
+      REPLICATOR_PASSWORD: ${REPLICATOR_PASSWORD}
       MASTER_HOST: postgres-master
     ports:
-      - "5434:5432"
+      - "${POSTGRES_REPLICA1_PORT}:5432"
     volumes:
-      - ./replica/replica-data:/var/lib/postgresql/data
-      - ./replica/postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./replica/pg_hba.conf:/etc/postgresql/pg_hba.conf
-      - ./replica/init-replica.sh:/init-replica.sh
+      - ./replica-one/replica-data:/var/lib/postgresql/data
+      - ./replica-one/postgresql.conf:/etc/postgresql/postgresql.conf
+      # - ./replica-one/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./replica-one/init-replica.sh:/init-replica.sh
     command: ["/bin/bash", "/init-replica.sh"]
     networks:
       - postgres-net
 
-volumes:
-  master_data:
-  replica_data:
+  postgres-replica-two:
+    image: postgres:15
+    container_name: postgres-replica-two
+    depends_on:
+      - postgres-master
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REPLICATOR_USER: ${REPLICATOR_USER}
+      REPLICATOR_PASSWORD: ${REPLICATOR_PASSWORD}
+      MASTER_HOST: postgres-master
+    ports:
+      - "${POSTGRES_REPLICA2_PORT}:5432"
+    volumes:
+      - ./replica-two/replica-data:/var/lib/postgresql/data
+      - ./replica-two/postgresql.conf:/etc/postgresql/postgresql.conf
+      # - ./replica-two/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./replica-two/init-replica.sh:/init-replica.sh
+    command: ["/bin/bash", "/init-replica.sh"]
+    networks:
+      - postgres-net
+
+# volumes:
+#   master_data:
+#   replica_data:
 
 networks:
   postgres-net:
