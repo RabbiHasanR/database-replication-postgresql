@@ -1,0 +1,67 @@
+services:
+  postgres-master:
+    image: postgres:15
+    container_name: postgres-master
+    ports:
+      - "${POSTGRES_MASTER_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./primary/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh
+      - ./primary/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./primary/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./primary/master-data:/var/lib/postgresql/data
+    command: postgres -c config_file=/var/lib/postgresql/data/postgresql.conf
+    networks:
+      - postgres-net
+
+  
+  postgres-replica-one:
+    image: postgres:15
+    container_name: postgres-replica-one
+    depends_on:
+      - postgres-master
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REPLICATOR_USER: ${REPLICATOR_USER}
+      REPLICATOR_PASSWORD: ${REPLICATOR_PASSWORD}
+      MASTER_HOST: postgres-master
+    ports:
+      - "${POSTGRES_REPLICA1_PORT}:5432"
+    volumes:
+      - ./replica-one/replica-data:/var/lib/postgresql/data
+      - ./replica-one/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./replica-one/init-replica.sh:/init-replica.sh
+    command: ["/bin/bash", "/init-replica.sh"]
+    networks:
+      - postgres-net
+
+  postgres-replica-two:
+    image: postgres:15
+    container_name: postgres-replica-two
+    depends_on:
+      - postgres-master
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REPLICATOR_USER: ${REPLICATOR_USER}
+      REPLICATOR_PASSWORD: ${REPLICATOR_PASSWORD}
+      MASTER_HOST: postgres-master
+    ports:
+      - "${POSTGRES_REPLICA2_PORT}:5432"
+    volumes:
+      - ./replica-two/replica-data:/var/lib/postgresql/data
+      - ./replica-two/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./replica-two/init-replica.sh:/init-replica.sh
+    command: ["/bin/bash", "/init-replica.sh"]
+    networks:
+      - postgres-net
+
+networks:
+  postgres-net:
+    driver: bridge
