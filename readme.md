@@ -35,3 +35,7 @@ If it says sync, it's synchronous.
 SELECT application_name, state, sync_state
 FROM pg_stat_replication;
 ```
+
+
+
+# test logical replication
