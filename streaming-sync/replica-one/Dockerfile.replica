@@ -1,0 +1,11 @@
+FROM postgres:15
+
+# Copy configs
+COPY ./postgresql.conf /etc/postgresql/postgresql.conf
+
+# Copy replication setup script
+COPY ./init-replica.sh /usr/local/bin/init-replica.sh
+RUN chmod +x /usr/local/bin/init-replica.sh
+
+# Use your script as the startup command
+ENTRYPOINT ["/usr/local/bin/init-replica.sh"]

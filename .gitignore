@@ -2,8 +2,13 @@
 .env
 
 # Ignore PostgreSQL data directories if you mount volumes later
-primary/master-data/
-replica/replica-data/
+streaming-async/primary/primary_data/
+streaming-async/replica-one/replica_data/
+streaming-async/replica-two/replica_data/
+
+streaming-sync/primary/primary_data/
+streaming-sync/replica-one/replica_data/
+streaming-sync/replica-two/replica_data/
 
 # Ignore Docker-related artifacts
 *.log
