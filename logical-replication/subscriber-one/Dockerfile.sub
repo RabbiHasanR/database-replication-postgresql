@@ -1,10 +1,10 @@
 FROM postgres:15
 
 COPY ./init-subscriber.sh /docker-entrypoint-initdb.d/init-subscriber.sh
-# COPY ./init-subscriber.sh /usr/local/bin/init-subscriber.sh
 
 RUN chmod +x /docker-entrypoint-initdb.d/init-subscriber.sh
-# RUN chmod +x /usr/local/bin/init-subscriber.sh
 
-# Use your script as the startup command
-# ENTRYPOINT ["/usr/local/bin/init-subscriber.sh"]
+
+
+
+
