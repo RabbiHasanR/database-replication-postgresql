@@ -1,0 +1,12 @@
+FROM postgres:15
+
+COPY ./postgresql.conf /etc/postgresql/postgresql.conf
+COPY ./pg_hba.conf /etc/postgresql/pg_hba.conf
+# COPY ./init-publisher.sh /usr/local/bin/init-publisher.sh
+COPY ./init-publisher.sh /docker-entrypoint-initdb.d/init-publisher.sh
+
+RUN chmod +x /docker-entrypoint-initdb.d/init-publisher.sh
+
+# RUN chmod +x /usr/local/bin/init-publisher.sh
+# ENTRYPOINT ["/usr/local/bin/init-publisher.sh"]
+

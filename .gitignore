@@ -10,6 +10,10 @@ streaming-sync/primary/primary_data/
 streaming-sync/replica-one/replica_data/
 streaming-sync/replica-two/replica_data/
 
+logical-replication/publisher/publisher_data/
+logical-replication/subscriber-one/subscriber_data/
+logical-replication/subscriber-two/subscriber_data/
+
 # Ignore Docker-related artifacts
 *.log
 *.pid
