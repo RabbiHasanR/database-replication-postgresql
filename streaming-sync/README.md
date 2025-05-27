@@ -1,16 +1,15 @@
-# Streaming Asynchronous Replication Example
+# Streaming Synchronous Replication Example
 
-This directory demonstrates how to set up **PostgreSQL Streaming Asynchronous Replication** using Bash scripts, configuration files, Docker, Docker Compose, and custom Dockerfiles for both primary and replica nodes.
+This directory demonstrates how to set up **PostgreSQL Streaming Synchronous Replication** using Bash scripts, configuration files, Docker, Docker Compose, and custom Dockerfiles for both primary and replica nodes.
 
 ---
 
 ## Overview
 
-**Streaming Asynchronous Replication** allows a standby (replica) PostgreSQL server to continuously receive WAL (Write-Ahead Log) changes from a primary (master) server. In asynchronous mode, the primary does **not** wait for the standby to acknowledge receipt, so there may be minimal data loss in a failover.
+**Streaming Synchronous Replication** allows a standby (replica) PostgreSQL server to continuously receive WAL (Write-Ahead Log) changes from a primary (master) server, but unlike asynchronous replication, the primary **waits for at least one replica** to confirm receipt of the transaction before it is considered committed. This ensures zero data loss on failover, at the cost of a slight increase in transaction latency.
 
 > **This example uses a one-master, two-replica approach:**  
 > You will find one primary container and two replica containers defined in the Docker Compose setup.
-
 
 Both primary and replica are launched as separate containers, built from their own Dockerfiles, and orchestrated with Docker Compose. Initialization and configuration are automated using Bash scripts and mounted configuration files.
 
@@ -18,7 +17,7 @@ Both primary and replica are launched as separate containers, built from their o
 
 ## Primary Directory: File Explanations
 
-The `primary/` directory contains everything needed to build and initialize the primary (master) PostgreSQL node for replication.
+The `primary/` directory contains everything needed to build and initialize the primary (master) PostgreSQL node for synchronous replication.
 
 ### `Dockerfile`
 - **Purpose:**  
@@ -28,18 +27,19 @@ The `primary/` directory contains everything needed to build and initialize the 
   - Copies in the custom `postgresql.conf` and `pg_hba.conf` to configure replication-specific settings and access control.
   - Copies and sets the `init-primary.sh` script as the entrypoint or startup command, ensuring initialization is automated when the container starts.
 - **How it works:**  
-  When you build the image, it includes all custom configs and the init script, so when the container is launched, it is ready for replication—with no manual setup required.
+  When you build the image, it includes all custom configs and the init script, so when the container is launched, it is ready for synchronous replication—with no manual setup required.
 
 ### `postgresql.conf`
 - **Purpose:**  
-  Main PostgreSQL configuration file, tailored for replication.
+  Main PostgreSQL configuration file, tailored for synchronous replication.
 - **Why it's written this way:**  
   - Sets `wal_level = replica` to enable WAL sending for physical replication.
   - Configures `max_wal_senders` and `wal_keep_size` for concurrent replication streams and WAL retention.
   - Uses `listen_addresses = '*'` so the container can accept connections from other hosts (the replica).
-  - Sets `synchronous_commit = off` for asynchronous operation (no waiting for replica acknowledgment).
+  - Sets `synchronous_commit = on` to enforce synchronous replication.
+  - Sets `synchronous_standby_names` to specify which replicas must acknowledge before commit.
 - **How it works:**  
-  The primary PostgreSQL server starts with these settings, making it ready to accept replication connections and stream WAL changes to the replica.
+  The primary PostgreSQL server starts with these settings, making it ready to accept replication connections and will only confirm transactions when the configured standby acknowledges receipt.
 
 ### `pg_hba.conf`
 - **Purpose:**  
@@ -56,13 +56,13 @@ The `primary/` directory contains everything needed to build and initialize the 
 - **Why it's written this way:**  
   - Automates database initialization, creation of the replication user, and ensures all configs are placed correctly.
 - **How it works:**  
-  When the primary container starts, this script runs automatically, setting up everything for streaming replication. It makes the process repeatable and container-friendly.
+  When the primary container starts, this script runs automatically, setting up everything for streaming synchronous replication. It makes the process repeatable and container-friendly.
 
 ---
 
 ## Replica Directory: File Explanations
 
-The `replica/` directory contains all files necessary to build and initialize a PostgreSQL replica (standby) node for streaming replication. For multi-replica setups, each replica can reuse this same structure with minor changes (such as container name or application name).
+The `replica/` directory contains all files necessary to build and initialize a PostgreSQL replica (standby) node for streaming synchronous replication. For multi-replica setups, each replica can reuse this same structure with minor changes (such as container name or application name).
 
 **The following explains the purpose and logic of each file in the replica directory:**
 
@@ -83,8 +83,9 @@ The `replica/` directory contains all files necessary to build and initialize a 
   - `hot_standby = on` enables read-only queries on the replica.
   - Does not set `wal_level` or `max_wal_senders` (not required for replica).
   - Includes `primary_conninfo`  to instruct the replica how to connect to the primary for streaming WAL.
+  - Optionally, sets `application_name` to match `synchronous_standby_names` on the primary.
 - **How it works:**  
-  Starts PostgreSQL in standby mode and ensures it can connect to the primary for streaming replication.
+  Starts PostgreSQL in standby mode and ensures it can connect to the primary for streaming replication and synchronous acknowledgment.
 
 ### `init-replica.sh`
 - **Purpose:**  
@@ -95,7 +96,7 @@ The `replica/` directory contains all files necessary to build and initialize a 
   - Sets up `standby.signal` for PostgreSQL 12+ to enter standby/replica mode.
   - Starts PostgreSQL in replica mode.
 - **How it works:**  
-  When the replica container starts, this script waits for the primary, clones its data with `pg_basebackup`, configures standby mode, and starts PostgreSQL as a replica. This automation makes adding more replicas easy—just reuse the same files.
+  When the replica container starts, this script waits for the primary, clones its data with `pg_basebackup`, configures standby mode, and starts PostgreSQL as a synchronous replica. This automation makes adding more replicas easy—just reuse the same files.
 
 ---
 
@@ -107,7 +108,6 @@ The `docker-compose.yml` file orchestrates the entire setup. Here’s how it wor
   - `primary`: The PostgreSQL master node, built from `primary/Dockerfile`.
   - `replica1`: The PostgreSQL standby node, built from `replica-one/Dockerfile`.
   - `replica2`: The PostgreSQL standby node, built from `replica-two/Dockerfile`.
-
 
 - **Build Contexts:**  
   Each service uses its corresponding subdirectory as the build context, ensuring the correct Dockerfile and files are used.
@@ -128,14 +128,14 @@ The `docker-compose.yml` file orchestrates the entire setup. Here’s how it wor
 When you run `docker compose up --build`, Docker Compose:
 1. Builds each image using the correct Dockerfile and context.
 2. Starts the primary first, running its initialization logic.
-3. Starts the replica, which waits for the primary to be ready, then clones its data and enters streaming replication mode.
-4. Both containers remain running, with the replica streaming WAL changes from the primary.
+3. Starts the replica, which waits for the primary to be ready, then clones its data and enters streaming synchronous replication mode.
+4. Both containers remain running, with the replica streaming WAL changes from the primary and sending acknowledgments for synchronous commit.
 
 ---
 
 ## How to Use
 
-1. **Clone this repository and enter the `streaming-async/` directory.**
+1. **Clone this repository and enter the `streaming-sync/` directory.**
 
 2. **Ensure Docker and Docker Compose are installed on your system.**
 
@@ -178,6 +178,7 @@ When you run `docker compose up --build`, Docker Compose:
       ```sh
       docker exec -it replica2 psql -U postgres -c "SELECT * FROM test_replication;"
       ```
+
 ---
 
 ## Notes
@@ -191,7 +192,7 @@ When you run `docker compose up --build`, Docker Compose:
 ## File Structure Example
 
 ```
-streaming-async/
+streaming-sync/
 ├── docker-compose.yml
 ├── primary/
 │   ├── Dockerfile
