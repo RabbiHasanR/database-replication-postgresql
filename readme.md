@@ -245,20 +245,6 @@ Replace `<publisher_ip>` and `<db_name>` with your publisher's IP and database n
 
 ---
 
-#### 4. Testing Logical Replication
-
-- **On Publisher:**  
-  ```sql
-  INSERT INTO test_replication (note) VALUES ('hello from publisher');
-  ```
-- **On Subscriber:**  
-  ```sql
-  SELECT * FROM test_replication;
-  ```
-  You should see the new row.
-
----
-
 ## Notes and Tips
 
 - Only DML (INSERT, UPDATE, DELETE) operations are replicated; DDL (schema changes) are not.
