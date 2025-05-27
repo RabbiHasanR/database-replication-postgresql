@@ -194,14 +194,17 @@ When you run `docker compose up --build`, Docker Compose:
 streaming-async/
 ├── docker-compose.yml
 ├── primary/
-│   ├── Dockerfile
+│   ├── Dockerfile.primary
 │   ├── postgresql.conf
 │   ├── pg_hba.conf
 │   └── init-primary.sh
-├── replica/
-│   ├── Dockerfile
+├── replica-one/
+│   ├── Dockerfile.replica
 │   ├── postgresql.conf
-│   ├── pg_hba.conf
+│   └── init-replica.sh
+── replica-two/
+│   ├── Dockerfile.replica
+│   ├── postgresql.conf
 │   └── init-replica.sh
 └── README.md
 ```

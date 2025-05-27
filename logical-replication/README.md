@@ -158,14 +158,12 @@ When you run `docker compose up --build`, Docker Compose:
 logical-replication/
 ├── docker-compose.yml
 ├── publisher/
-│   ├── Dockerfile
+│   ├── Dockerfile.pub
 │   ├── postgresql.conf
 │   ├── pg_hba.conf
 │   └── init-publisher.sh
-├── subscriber/
-│   ├── Dockerfile
-│   ├── postgresql.conf
-│   ├── pg_hba.conf
+├── subscriber-one/
+│   ├── Dockerfile.sub
 │   └── init-subscriber.sh
 └── README.md
 ```
